@@ -1,4 +1,3 @@
-// const ERC677BridgeToken = artifacts.require('ERC677BridgeToken.sol')
 const EntitiesTransferManager = artifacts.require('./mockContracts/EntitiesTransferManagerMock.sol')
 const EntitiesList = artifacts.require('EntitiesList.sol')
 
