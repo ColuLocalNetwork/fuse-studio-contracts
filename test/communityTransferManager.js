@@ -117,7 +117,7 @@ contract('CommunityTransferManager', async (accounts) => {
       await validateNoEntity(user)
     })
 
-    it('only owner can add remove entity', async () => {
+    it('only owner can remove entity', async () => {
       await transferManager.removeEntity(user, { from: notOwner }).should.be.rejectedWith(ERROR_MSG)
       await validateEntity(user, entity)
     })
