@@ -1,4 +1,4 @@
-const EntitiesTransferManager = artifacts.require('./mockContracts/EntitiesTransferManagerMock.sol')
+const EntitiesTransferManager = artifacts.require('EntitiesTransferManager.sol')
 const EntitiesList = artifacts.require('EntitiesList.sol')
 
 const { ERROR_MSG } = require('./setup')
@@ -11,7 +11,7 @@ const NO_PERM = '0x0000000000000000000000000000000000000000000000000000000000000
 const USER_PERM = '0x0000000000000000000000000000000000000000000000000000000000000001'
 const ADMIN_PERM = '0x0000000000000000000000000000000000000000000000000000000000000003' // user + admin
 
-const BUSINESS_PERM = '0x000000000000000000000000000000000000000000000000000000000000000b' // user + approved + business
+const BUSINESS_PERM = '0x0000000000000000000000000000000000000000000000000000000000000009' // user + business
 
 contract('EntitiesTransferManager', async (accounts) => {
   let transferManager, entitiesList
@@ -257,7 +257,7 @@ contract('EntitiesTransferManager', async (accounts) => {
 
     describe('#rule: joined users can tranfer max 10 wei', () => {
       beforeEach(async () => {
-        await transferManager.addRuleFullParams(USER_PERM, USER_PERM, true, 10, { from: owner })
+        await transferManager.methods['addRule(bytes32,bytes32,bool,uint256)'](USER_PERM, USER_PERM, true, 10, { from: owner })
 
         await transferManager.join('uri', { from: user }).should.be.fulfilled
         await transferManager.join('anotherUri', { from: anotherUser }).should.be.fulfilled
@@ -278,7 +278,7 @@ contract('EntitiesTransferManager', async (accounts) => {
 
     describe('#rule: joined users can tranfer min 10 wei', () => {
       beforeEach(async () => {
-        await transferManager.addRuleFullParams(USER_PERM, USER_PERM, false, 10, { from: owner })
+        await transferManager.methods['addRule(bytes32,bytes32,bool,uint256)'](USER_PERM, USER_PERM, false, 10, { from: owner })
 
         await transferManager.join('uri', { from: user }).should.be.fulfilled
         await transferManager.join('anotherUri', { from: anotherUser }).should.be.fulfilled
