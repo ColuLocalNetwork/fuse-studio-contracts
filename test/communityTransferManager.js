@@ -1,4 +1,4 @@
-const EntitiesTransferManager = artifacts.require('EntitiesTransferManager.sol')
+const CommunityTransferManager = artifacts.require('CommunityTransferManager.sol')
 const EntitiesList = artifacts.require('EntitiesList.sol')
 
 const { ERROR_MSG } = require('./setup')
@@ -13,7 +13,7 @@ const ADMIN_PERM = '0x0000000000000000000000000000000000000000000000000000000000
 
 const BUSINESS_PERM = '0x0000000000000000000000000000000000000000000000000000000000000009' // user + business
 
-contract('EntitiesTransferManager', async (accounts) => {
+contract('CommunityTransferManager', async (accounts) => {
   let transferManager, entitiesList
   const owner = accounts[0]
   const notOwner = accounts[1]
@@ -30,14 +30,14 @@ contract('EntitiesTransferManager', async (accounts) => {
   const validateNoEntity = (account) => validateEntity(account, { uri: '', permissions: NO_PERM })
 
   beforeEach(async () => {
-    transferManager = await EntitiesTransferManager.new()
+    transferManager = await CommunityTransferManager.new()
     entitiesList = await EntitiesList.at(await transferManager.entitiesList())
   })
 
   describe('#constructor', () => {
     it('creator is admin of the community', async () => {
       const entity = { uri: '', permissions: ADMIN_PERM }
-      transferManager = await EntitiesTransferManager.new()
+      transferManager = await CommunityTransferManager.new()
       await validateEntity(owner, entity)
     })
   })

@@ -2,30 +2,18 @@ pragma solidity ^0.4.24;
 
 import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./ITransferManager.sol";
+import "./Community.sol";
 import "./EntitiesList.sol";
 import "./Rule.sol";
 
-contract EntitiesTransferManager is
-    ITransferManager {
-  EntitiesList public entitiesList;
+contract CommunityTransferManager is
+    ITransferManager,
+    Community {
   Rule[] private _rules;
-  bytes32 public constant userMask = bytes32(1);
-  bytes32 public constant adminMask = bytes32(2);
   uint256 public constant maxRules = 20;
   
   event RuleAdded(bytes32 fromMask, bytes32 toMask, bool isMax, uint256 amount);
   event RuleRemoved(uint256 index);
-
-  constructor () public {
-    entitiesList = new EntitiesList();
-    entitiesList.addEntity(msg.sender, '', userMask | adminMask);
-  }
-
-  modifier onlyAdmin () {
-    require(entitiesList.hasPermission(msg.sender, adminMask));
-    _;
-  }
-
 
   /**
    * @dev Whitelist type transfer logic, Should be pluggable in the future.
@@ -48,26 +36,6 @@ contract EntitiesTransferManager is
       }
     }
     return false;
-  }
-
-  function join(string _entityUri) public {
-    entitiesList.addEntity(msg.sender, _entityUri, userMask);
-  }
-
-  function addEntity(address _account, string _entityUri, bytes32 _permissions) public onlyAdmin {
-    entitiesList.addEntity(_account, _entityUri, _permissions);
-  }
-
-  function updateEntityUri(address _account, string _entityUri) public onlyAdmin {
-    entitiesList.updateEntityUri(_account, _entityUri);
-  }
-
-  function updateEntityPermissions(address _account, bytes32 _entityPermissions) public onlyAdmin {
-    entitiesList.updateEntityPermissions(_account, _entityPermissions);
-  }
-
-  function removeEntity(address _account) onlyAdmin public {
-    entitiesList.removeEntity(_account);
   }
 
   function addRule(bytes32 _fromMask, bytes32 _toMask) public onlyAdmin {
@@ -96,5 +64,4 @@ contract EntitiesTransferManager is
 
     emit RuleRemoved(_index);
   }
-
 }
