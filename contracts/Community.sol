@@ -2,15 +2,19 @@ pragma solidity ^0.4.24;
 
 import "./EntitiesList.sol";
 
-
 contract Community {
     EntitiesList public entitiesList;
+
     bytes32 public constant userMask = bytes32(1);
     bytes32 public constant adminMask = bytes32(2);
 
-    constructor () public {
+    constructor (address _membersList) public {
         entitiesList = new EntitiesList();
         entitiesList.addEntity(msg.sender, '', userMask | adminMask);
+    }
+
+    function setEntitiesList(address _entitiesList) public onlyAdmin {
+        entitiesList = EntitiesList(_entitiesList);
     }
 
     modifier onlyAdmin () {
@@ -18,23 +22,23 @@ contract Community {
         _;
     }
 
-    function join(string _entityUri) public {
-        entitiesList.addEntity(msg.sender, _entityUri, userMask);
+    function join() public {
+        entitiesList.addEntity(msg.sender, userMask);
     }
 
-    function addEntity(address _account, string _entityUri, bytes32 _permissions) public onlyAdmin {
-        entitiesList.addEntity(_account, _entityUri, _permissions);
-    }
-
-    function updateEntityUri(address _account, string _entityUri) public onlyAdmin {
-        entitiesList.updateEntityUri(_account, _entityUri);
-    }
-
-    function updateEntityPermissions(address _account, bytes32 _entityPermissions) public onlyAdmin {
-        entitiesList.updateEntityPermissions(_account, _entityPermissions);
+    function addEntity(address _account, bytes32 _roles) public onlyAdmin {
+        entitiesList.addEntity(_account, _roles);
     }
 
     function removeEntity(address _account) onlyAdmin public {
         entitiesList.removeEntity(_account);
+    }
+
+    function addEnitityRoles(address _account, bytes32 _entityRoles) public onlyAdmin {
+        entitiesList.addRoles(_account, _entityRoles);
+    }
+
+    function removeEnitityRoles(address _account, bytes32 _entityRoles) public onlyAdmin {
+        entitiesList.removeRoles(_account, _entityRoles);
     }
 }
