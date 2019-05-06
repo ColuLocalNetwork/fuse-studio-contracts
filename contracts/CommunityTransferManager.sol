@@ -22,8 +22,8 @@ contract CommunityTransferManager is
    * @param _value The address to transfer to.
    */
   function verifyTransfer(address _from, address _to, uint256 _value) public view returns (bool) {
-    bytes32 fromPermissions = entitiesList.permissionsOf(_from);
-    bytes32 toPermissions = entitiesList.permissionsOf(_to);
+    bytes32 fromPermissions = entitiesList.rolesOf(_from);
+    bytes32 toPermissions = entitiesList.rolesOf(_to);
 
     if (_rules.length == 0) {
       return true;

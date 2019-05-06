@@ -8,9 +8,9 @@ contract Community {
     bytes32 public constant userMask = bytes32(1);
     bytes32 public constant adminMask = bytes32(2);
 
-    constructor (address _membersList) public {
+    constructor () public {
         entitiesList = new EntitiesList();
-        entitiesList.addEntity(msg.sender, '', userMask | adminMask);
+        entitiesList.addEntity(msg.sender, userMask | adminMask);
     }
 
     function setEntitiesList(address _entitiesList) public onlyAdmin {
@@ -18,7 +18,7 @@ contract Community {
     }
 
     modifier onlyAdmin () {
-        require(entitiesList.hasPermission(msg.sender, adminMask));
+        require(entitiesList.hasRoles(msg.sender, adminMask));
         _;
     }
 
@@ -40,5 +40,9 @@ contract Community {
 
     function removeEnitityRoles(address _account, bytes32 _entityRoles) public onlyAdmin {
         entitiesList.removeRoles(_account, _entityRoles);
+    }
+
+    function hasRoles(address _account, bytes32 _entityRoles) public view returns (bool) {
+        return entitiesList.hasRoles(_account, _entityRoles);
     }
 }

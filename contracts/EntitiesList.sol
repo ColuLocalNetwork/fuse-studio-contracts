@@ -4,7 +4,7 @@ import "openzeppelin-solidity/contracts/ownership/Ownable.sol";
 import "./Entities.sol";
 
 contract EntitiesList is Ownable {
-    using Entity for Entities.Entity;
+    using Entities for Entities.Entity;
 
     event EntityAdded(address indexed account, bytes32 roles);
     event EntityRemoved(address indexed account);
@@ -13,7 +13,7 @@ contract EntitiesList is Ownable {
     Entities.Entity private _entities;
 
     function rolesOf(address _account) public view returns (bytes32) {
-        return _entities[_account];
+        return _entities.rolesOf(_account);
     }
 
     function addEntity(address _account, bytes32 _roles) onlyOwner public {
@@ -28,17 +28,17 @@ contract EntitiesList is Ownable {
     }
 
     function addRoles(address _account, bytes32 _roles) onlyOwner public {
-        _entities.addRoles(_account, _roles);
-        emit EntityRolesUpdated(_account, _roles);
+        bytes32 roles = _entities.addRoles(_account, _roles);
+        emit EntityRolesUpdated(_account, roles);
     }
 
     function removeRoles(address _account, bytes32 _roles) onlyOwner public {
-        _entities.removeRoles(_account, _roles);
+        bytes32 roles = _entities.removeRoles(_account, _roles);
 
-        emit EntityRolesUpdated(_account, _roles);
+        emit EntityRolesUpdated(_account, roles);
     }
 
     function hasRoles(address _account, bytes32 _roles) public view returns (bool) {
-      return hasRoles.hasRoles(_account, _roles)
+      return _entities.hasRoles(_account, _roles);
     }
 }

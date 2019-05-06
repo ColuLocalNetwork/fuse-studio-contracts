@@ -2,16 +2,14 @@ const CommunityTransferManager = artifacts.require('CommunityTransferManager.sol
 const EntitiesList = artifacts.require('EntitiesList.sol')
 
 const { ERROR_MSG } = require('./setup')
-
-const USER_MASK = '0x0000000000000000000000000000000000000000000000000000000000000001'
-const ADMIN_MASK = '0x0000000000000000000000000000000000000000000000000000000000000002'
-const BUSINESS_MASK = '0x0000000000000000000000000000000000000000000000000000000000000008'
-
-const NO_PERM = '0x0000000000000000000000000000000000000000000000000000000000000000'
-const USER_PERM = '0x0000000000000000000000000000000000000000000000000000000000000001'
-const ADMIN_PERM = '0x0000000000000000000000000000000000000000000000000000000000000003' // user + admin
-
-const BUSINESS_PERM = '0x0000000000000000000000000000000000000000000000000000000000000009' // user + business
+const {
+  USER_MASK,
+  BUSINESS_MASK,
+  NO_ROLES,
+  USER_ROLE,
+  ADMIN_ROLE,
+  BUSINESS_ROLE
+} = require('./roles')
 
 contract('CommunityTransferManager', async (accounts) => {
   let transferManager, entitiesList
@@ -22,12 +20,9 @@ contract('CommunityTransferManager', async (accounts) => {
   const business = accounts[4]
 
   const validateEntity = async (account, entity) => {
-    const { '0': uri, '1': permissions } = await entitiesList.entityOf(account)
-    assert.equal(entity.uri, uri)
-    assert.equal(entity.permissions, permissions)
+    const roles = await entitiesList.rolesOf(account)
+    assert.equal(entity.roles, roles)
   }
-
-  const validateNoEntity = (account) => validateEntity(account, { uri: '', permissions: NO_PERM })
 
   beforeEach(async () => {
     transferManager = await CommunityTransferManager.new()
@@ -36,120 +31,19 @@ contract('CommunityTransferManager', async (accounts) => {
 
   describe('#constructor', () => {
     it('creator is admin of the community', async () => {
-      const entity = { uri: '', permissions: ADMIN_PERM }
+      const entity = { roles: ADMIN_ROLE }
       transferManager = await CommunityTransferManager.new()
       await validateEntity(owner, entity)
     })
   })
 
-  describe('#join', async () => {
-    it('user can join community', async () => {
-      const entity = { uri: 'uri', permissions: USER_PERM }
-      await transferManager.join(entity.uri, { from: user }).should.be.fulfilled
-      await validateEntity(user, entity)
-    })
-
-    it('user cannot join twice ', async () => {
-      const entity = { uri: 'uri', permissions: USER_PERM }
-      await transferManager.join(entity.uri, { from: user }).should.be.fulfilled
-      await validateEntity(user, entity)
-
-      await transferManager.join(entity.uri, { from: user }).should.be.rejectedWith(ERROR_MSG)
-    })
-  })
-
-  describe('#addEntity', async () => {
-    it('owner can add user', async () => {
-      const entity = { uri: 'uri', permissions: USER_PERM }
-      await transferManager.addEntity(user, entity.uri, entity.permissions, { from: owner }).should.be.fulfilled
-      await validateEntity(user, entity)
-    })
-
-    it('only owner can add user', async () => {
-      const entity = { uri: 'uri', permissions: USER_PERM }
-      await transferManager.addEntity(user, entity.uri, entity.permissions, { from: notOwner }).should.be.rejectedWith(ERROR_MSG)
-      await validateNoEntity(user)
-    })
-
-    it('owner can add business', async () => {
-      const entity = { uri: 'uri', permissions: BUSINESS_PERM }
-      await transferManager.addEntity(user, entity.uri, entity.permissions, { from: owner }).should.be.fulfilled
-      await validateEntity(user, entity)
-    })
-
-    it('owner can add admin', async () => {
-      const entity = { uri: 'uri', permissions: ADMIN_PERM }
-      await transferManager.addEntity(user, entity.uri, entity.permissions, { from: owner }).should.be.fulfilled
-      await validateEntity(user, entity)
-      assert.isOk(await entitiesList.hasPermission(user, ADMIN_MASK).should.be.fulfilled)
-    })
-
-    it('can add multiple user', async () => {
-      const entity = { uri: 'uri', permissions: USER_PERM }
-      const anotherEntity = { uri: 'uri2', permissions: USER_PERM }
-
-      await transferManager.addEntity(user, entity.uri, entity.permissions, { from: owner }).should.be.fulfilled
-      await transferManager.addEntity(anotherUser, anotherEntity.uri, anotherEntity.permissions, { from: owner }).should.be.fulfilled
-
-      await validateEntity(user, entity)
-      await validateEntity(anotherUser, anotherEntity)
-    })
-
-    it('cannot add same user twice', async () => {
-      const entity = { uri: 'uri', permissions: USER_PERM }
-      const anotherEntity = { uri: 'uri2', permissions: USER_PERM }
-
-      await transferManager.addEntity(user, entity.uri, entity.permissions, { from: owner }).should.be.fulfilled
-      await transferManager.addEntity(user, anotherEntity.uri, anotherEntity.permissions, { from: owner }).should.be.rejectedWith(ERROR_MSG)
-
-      await validateEntity(user, entity)
-    })
-  })
-
-  describe('#removeEntity', async () => {
-    const entity = { uri: 'uri', permissions: USER_PERM }
-
-    beforeEach(async () => {
-      await transferManager.addEntity(user, entity.uri, entity.permissions, { from: owner }).should.be.fulfilled
-    })
-    it('owner can remove entity', async () => {
-      await transferManager.removeEntity(user, { from: owner }).should.be.fulfilled
-      await validateNoEntity(user)
-    })
-
-    it('only owner can remove entity', async () => {
-      await transferManager.removeEntity(user, { from: notOwner }).should.be.rejectedWith(ERROR_MSG)
-      await validateEntity(user, entity)
-    })
-  })
-
-  describe('#updateEntityUri', async () => {
-    const entity = { uri: 'uri', permissions: USER_PERM }
-
-    beforeEach(async () => {
-      await transferManager.addEntity(user, entity.uri, entity.permissions, { from: owner }).should.be.fulfilled
-    })
-    it('owner can update entity uri', async () => {
-      const uri = 'newuri'
-      await transferManager.updateEntityUri(user, uri, { from: owner }).should.be.fulfilled
-      await validateEntity(user, { ...entity, uri })
-    })
-
-    it('only owner can update entity uri', async () => {
-      const uri = 'newuri'
-
-      await transferManager.updateEntityUri(user, uri, { from: notOwner }).should.be.rejectedWith(ERROR_MSG)
-      await validateEntity(user, entity)
-    })
-  })
-
   describe('#addRule', async () => {
     it('owner can add rule', async () => {
-      await transferManager.addRule(ADMIN_PERM, NO_PERM, { from: owner }).should.be.fulfilled
+      await transferManager.addRule(ADMIN_ROLE, NO_ROLES, { from: owner }).should.be.fulfilled
     })
 
     it('only owner can add rule', async () => {
-      await transferManager.addRule(ADMIN_PERM, NO_PERM, { from: notOwner }).should.be.rejectedWith(ERROR_MSG)
+      await transferManager.addRule(ADMIN_ROLE, NO_ROLES, { from: notOwner }).should.be.rejectedWith(ERROR_MSG)
     })
 
     it('cannot add more than 20 rules', async () => {
@@ -162,7 +56,7 @@ contract('CommunityTransferManager', async (accounts) => {
 
   describe('#removeRule', async () => {
     beforeEach(async () => {
-      await transferManager.addRule(USER_PERM, USER_PERM, { from: owner }).should.be.fulfilled
+      await transferManager.addRule(USER_ROLE, USER_ROLE, { from: owner }).should.be.fulfilled
     })
 
     it('owner can remove rule', async () => {
@@ -185,8 +79,8 @@ contract('CommunityTransferManager', async (accounts) => {
       })
 
       it('joined users can transfer', async () => {
-        await transferManager.join('uri', { from: user }).should.be.fulfilled
-        await transferManager.join('anotherUri', { from: anotherUser }).should.be.fulfilled
+        await transferManager.join({ from: user }).should.be.fulfilled
+        await transferManager.join({ from: anotherUser }).should.be.fulfilled
 
         assert.isOk(await transferManager.verifyTransfer(user, anotherUser, 1))
         assert.isOk(await transferManager.verifyTransfer(anotherUser, user, 1))
@@ -195,7 +89,7 @@ contract('CommunityTransferManager', async (accounts) => {
 
     describe('#rule: only joined users', () => {
       beforeEach(async () => {
-        await transferManager.addRule(USER_PERM, USER_PERM, { from: owner }).should.be.fulfilled
+        await transferManager.addRule(USER_ROLE, USER_ROLE, { from: owner }).should.be.fulfilled
       })
 
       it('if both users are not joined, verifyTransfer is false', async () => {
@@ -203,20 +97,20 @@ contract('CommunityTransferManager', async (accounts) => {
       })
 
       it('if sender is not registered, verifyTransfer is false', async () => {
-        await transferManager.join('uri', { from: anotherUser }).should.be.fulfilled
+        await transferManager.join({ from: anotherUser }).should.be.fulfilled
 
         assert.isNotOk(await transferManager.verifyTransfer(user, anotherUser, 1))
       })
 
       it('if receiver is not registered, verifyTransfer is false', async () => {
-        await transferManager.join('uri', { from: user }).should.be.fulfilled
+        await transferManager.join({ from: user }).should.be.fulfilled
 
         assert.isNotOk(await transferManager.verifyTransfer(user, anotherUser, 1))
       })
 
       it('joined users can transfer', async () => {
-        await transferManager.join('uri', { from: user }).should.be.fulfilled
-        await transferManager.join('anotherUri', { from: anotherUser }).should.be.fulfilled
+        await transferManager.join({ from: user }).should.be.fulfilled
+        await transferManager.join({ from: anotherUser }).should.be.fulfilled
 
         assert.isOk(await transferManager.verifyTransfer(user, anotherUser, 1))
         assert.isOk(await transferManager.verifyTransfer(anotherUser, user, 1))
@@ -224,7 +118,7 @@ contract('CommunityTransferManager', async (accounts) => {
 
       describe('#rule: only admin can transfer to everyone', () => {
         beforeEach(async () => {
-          await transferManager.addRule(ADMIN_PERM, NO_PERM, { from: owner }).should.be.fulfilled
+          await transferManager.addRule(ADMIN_ROLE, NO_ROLES, { from: owner }).should.be.fulfilled
         })
 
         it('admin can transfer to not joined users ', async () => {
@@ -241,8 +135,8 @@ contract('CommunityTransferManager', async (accounts) => {
       describe('#rule: users can transfer only to businesses', () => {
         beforeEach(async () => {
           await transferManager.addRule(USER_MASK, BUSINESS_MASK, { from: owner }).should.be.fulfilled
-          await transferManager.addEntity(business, 'uri', BUSINESS_PERM, { from: owner }).should.be.fulfilled
-          await transferManager.join('uri', { from: user }).should.be.fulfilled
+          await transferManager.addEntity(business, BUSINESS_ROLE, { from: owner }).should.be.fulfilled
+          await transferManager.join({ from: user }).should.be.fulfilled
         })
 
         it('user can transfer to business ', async () => {
@@ -257,10 +151,10 @@ contract('CommunityTransferManager', async (accounts) => {
 
     describe('#rule: joined users can tranfer max 10 wei', () => {
       beforeEach(async () => {
-        await transferManager.methods['addRule(bytes32,bytes32,bool,uint256)'](USER_PERM, USER_PERM, true, 10, { from: owner })
+        await transferManager.methods['addRule(bytes32,bytes32,bool,uint256)'](USER_ROLE, USER_ROLE, true, 10, { from: owner })
 
-        await transferManager.join('uri', { from: user }).should.be.fulfilled
-        await transferManager.join('anotherUri', { from: anotherUser }).should.be.fulfilled
+        await transferManager.join({ from: user }).should.be.fulfilled
+        await transferManager.join({ from: anotherUser }).should.be.fulfilled
       })
 
       it('joined users can transfer 5 wei ', async () => {
@@ -278,10 +172,10 @@ contract('CommunityTransferManager', async (accounts) => {
 
     describe('#rule: joined users can tranfer min 10 wei', () => {
       beforeEach(async () => {
-        await transferManager.methods['addRule(bytes32,bytes32,bool,uint256)'](USER_PERM, USER_PERM, false, 10, { from: owner })
+        await transferManager.methods['addRule(bytes32,bytes32,bool,uint256)'](USER_ROLE, USER_ROLE, false, 10, { from: owner })
 
-        await transferManager.join('uri', { from: user }).should.be.fulfilled
-        await transferManager.join('anotherUri', { from: anotherUser }).should.be.fulfilled
+        await transferManager.join({ from: user }).should.be.fulfilled
+        await transferManager.join({ from: anotherUser }).should.be.fulfilled
       })
 
       it('joined users can transfer 5 wei ', async () => {

@@ -34,7 +34,7 @@ contract MembersList is Ownable {
     }
 
     function join(string _memberUri) public {
-        require(bytes(members[_account]).length == 0);
+        require(bytes(members[msg.sender]).length == 0);
         members[msg.sender] = _memberUri;
 
         emit MemberAdded(msg.sender, _memberUri);
