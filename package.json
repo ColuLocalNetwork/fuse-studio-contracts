@@ -6,7 +6,8 @@
   "scripts": {
     "test": "truffle test",
     "compile": "truffle compile",
-    "deploy-dev": "truffle migrate"
+    "deploy-dev": "truffle migrate",
+    "deploy-fuse": "truffle migrate --network fuse --reset"
   },
   "author": "",
   "license": "MIT",
@@ -23,7 +24,8 @@
   },
   "dependencies": {
     "openzeppelin-solidity": "^2.0.1",
-    "truffle": "^5.0.14"
+    "truffle": "^5.0.14",
+    "truffle-hdwallet-provider": "^1.0.8"
   },
   "devDependencies": {
     "chai": "^4.2.0",
